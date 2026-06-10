@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { games } from "@/db/schema";
+import { games, gameHistory } from "@/db/schema";
 import { fetchTopGames } from "@/lib/twitch";
-import { sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret");
@@ -11,6 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   const twitchGames = await fetchTopGames();
+  const now = new Date();
 
   for (const game of twitchGames) {
     const score =
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         channelCount: game.channel_count,
         score,
         tags: game.tags,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .onConflictDoUpdate({
         target: games.id,
@@ -39,9 +39,17 @@ export async function GET(req: NextRequest) {
           channelCount: game.channel_count,
           score,
           tags: game.tags,
-          updatedAt: new Date(),
+          updatedAt: now,
         },
       });
+
+    await db.insert(gameHistory).values({
+      gameId: game.id,
+      score,
+      viewerCount: game.viewer_count,
+      channelCount: game.channel_count,
+      recordedAt: now,
+    });
   }
 
   return NextResponse.json({ synced: twitchGames.length });

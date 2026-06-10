@@ -1,7 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { X, Eye, Radio, TrendingUp, Clock } from "lucide-react";
-import type { Game } from "@/db/schema";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
+import type { Game, GameHistory } from "@/db/schema";
 
 interface Props {
   game: Game;
@@ -13,7 +22,28 @@ function formatNumber(n: number): string {
   return String(n);
 }
 
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function GameModal({ game, onClose }: Props) {
+  const [history, setHistory] = useState<GameHistory[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/games/${game.id}/history`)
+      .then((r) => r.json())
+      .then((data: GameHistory[]) => setHistory(data))
+      .catch(() => {});
+  }, [game.id]);
+
+  const chartData = history.map((h) => ({
+    time: formatTime(h.recordedAt as unknown as string),
+    score: parseFloat(h.score.toFixed(2)),
+  }));
+
   return (
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -50,7 +80,50 @@ export default function GameModal({ game, onClose }: Props) {
           </div>
         </div>
 
-        <div className="mt-5 pt-5 border-t border-slate-700/50">
+        {/* トレンドグラフ */}
+        {chartData.length >= 2 ? (
+          <div className="mt-5 pt-5 border-t border-slate-700/50">
+            <p className="text-xs text-slate-400 mb-3">穴場スコア推移（直近24h）</p>
+            <ResponsiveContainer width="100%" height={100}>
+              <LineChart data={chartData}>
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 10, fill: "#64748b" }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                />
+                <YAxis hide domain={["auto", "auto"]} />
+                <Tooltip
+                  contentStyle={{
+                    background: "#1e293b",
+                    border: "1px solid #334155",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    color: "#e2e8f0",
+                  }}
+                  labelStyle={{ color: "#94a3b8" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#22d3ee"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: "#22d3ee" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="mt-5 pt-5 border-t border-slate-700/50">
+            <p className="text-xs text-slate-500 text-center py-2">
+              グラフはデータ蓄積後に表示されます（次回 Cron 実行以降）
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 pt-4 border-t border-slate-700/50">
           <p className="text-xs text-slate-400 flex items-center gap-1.5">
             <Clock size={11} />
             最終更新: {new Date(game.updatedAt).toLocaleString("ja-JP")}

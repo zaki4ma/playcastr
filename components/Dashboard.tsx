@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, ArrowUpDown, Tag, X } from "lucide-react";
+import { Search, ArrowUpDown, Tag, X, List } from "lucide-react";
 import type { Game } from "@/db/schema";
 import GameCard from "./GameCard";
 import GameModal from "./GameModal";
+import TopTen from "./TopTen";
 
 type SortKey = "score" | "viewers" | "channels";
 
@@ -148,15 +149,31 @@ export default function Dashboard() {
               : "データがありません。Cron を実行してください。"}
           </div>
         ) : (
-          <div className="space-y-2">
-            {games.map((game, i) => (
-              <GameCard
-                key={game.id}
-                game={game}
-                rank={i + 1}
-                onClick={setSelected}
-              />
-            ))}
+          <div className="space-y-6">
+            {/* フィルターなし・スコア順のときだけ TOP 10 を表示 */}
+            {!debouncedQuery && !selectedTag && sort === "score" && games.length >= 3 && (
+              <TopTen games={games} onSelect={setSelected} />
+            )}
+
+            {/* 全件リスト */}
+            <div className="space-y-1">
+              {(!debouncedQuery && !selectedTag && sort === "score") && (
+                <div className="flex items-center gap-2 mb-3">
+                  <List size={14} className="text-slate-500" />
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    全ランキング
+                  </span>
+                </div>
+              )}
+              {games.map((game, i) => (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  rank={i + 1}
+                  onClick={setSelected}
+                />
+              ))}
+            </div>
           </div>
         )}
       </main>

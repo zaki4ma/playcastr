@@ -8,6 +8,13 @@
       "when": 1781073596446,
       "tag": "0000_right_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781076926264,
+      "tag": "0001_fast_proteus",
+      "breakpoints": true
     }
   ]
 }
