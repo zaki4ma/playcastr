@@ -49,6 +49,18 @@ export default function GameCard({ game, rank, onClick }: Props) {
             {formatNumber(game.channelCount)}
           </span>
         </div>
+        {game.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {game.tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-1.5 py-0.5 bg-slate-700/60 text-slate-400 rounded text-[10px]"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* スコア */}

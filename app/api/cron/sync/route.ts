@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         viewerCount: game.viewer_count,
         channelCount: game.channel_count,
         score,
-        tags: [],
+        tags: game.tags,
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
           viewerCount: game.viewer_count,
           channelCount: game.channel_count,
           score,
+          tags: game.tags,
           updatedAt: new Date(),
         },
       });

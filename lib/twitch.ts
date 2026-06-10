@@ -35,6 +35,7 @@ export interface TwitchGame {
   box_art_url: string;
   viewer_count: number;
   channel_count: number;
+  tags: string[];
 }
 
 export async function fetchTopGames(): Promise<TwitchGame[]> {
@@ -53,7 +54,7 @@ export async function fetchTopGames(): Promise<TwitchGame[]> {
 
   // 各ゲームのストリーム情報を取得してviewer_count/channel_countを集計
   const gameIds: string[] = gamesData.data.map((g: { id: string }) => g.id);
-  const streamCounts: Record<string, { viewers: number; channels: number }> = {};
+  const streamCounts: Record<string, { viewers: number; channels: number; tagFreq: Record<string, number> }> = {};
 
   // ゲームIDを25件ずつに分割してストリーム情報を取得
   for (let i = 0; i < gameIds.length; i += 25) {
@@ -73,15 +74,23 @@ export async function fetchTopGames(): Promise<TwitchGame[]> {
 
     for (const stream of streamsData.data) {
       if (!streamCounts[stream.game_id]) {
-        streamCounts[stream.game_id] = { viewers: 0, channels: 0 };
+        streamCounts[stream.game_id] = { viewers: 0, channels: 0, tagFreq: {} };
       }
       streamCounts[stream.game_id].viewers += stream.viewer_count;
       streamCounts[stream.game_id].channels += 1;
+      for (const tag of stream.tags ?? []) {
+        streamCounts[stream.game_id].tagFreq[tag] =
+          (streamCounts[stream.game_id].tagFreq[tag] ?? 0) + 1;
+      }
     }
   }
 
   return gamesData.data.map((game: { id: string; name: string; box_art_url: string }) => {
-    const counts = streamCounts[game.id] ?? { viewers: 0, channels: 0 };
+    const counts = streamCounts[game.id] ?? { viewers: 0, channels: 0, tagFreq: {} };
+    const topTags = Object.entries(counts.tagFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tag]) => tag);
     return {
       id: game.id,
       name: game.name,
@@ -90,6 +99,7 @@ export async function fetchTopGames(): Promise<TwitchGame[]> {
         .replace("{height}", "192"),
       viewer_count: counts.viewers,
       channel_count: counts.channels,
+      tags: topTags,
     };
   });
 }

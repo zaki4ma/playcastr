@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUpDown, Tag, X } from "lucide-react";
 import type { Game } from "@/db/schema";
 import GameCard from "./GameCard";
 import GameModal from "./GameModal";
@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [sort, setSort] = useState<SortKey>("score");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selected, setSelected] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,18 +30,27 @@ export default function Dashboard() {
     return () => clearTimeout(t);
   }, [query]);
 
+  // タグ一覧を取得
+  useEffect(() => {
+    fetch("/api/tags")
+      .then((r) => r.json())
+      .then((tags: string[]) => setAvailableTags(tags))
+      .catch(() => {});
+  }, []);
+
   const fetchGames = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ sort });
       if (debouncedQuery) params.set("q", debouncedQuery);
+      if (selectedTag) params.set("tag", selectedTag);
       const res = await fetch(`/api/games?${params}`);
       const data = await res.json();
       setGames(data);
     } finally {
       setLoading(false);
     }
-  }, [sort, debouncedQuery]);
+  }, [sort, debouncedQuery, selectedTag]);
 
   useEffect(() => {
     fetchGames();
@@ -62,7 +73,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* 検索 + ソート */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -91,6 +102,35 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* タグフィルター */}
+        {availableTags.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Tag size={13} className="text-slate-500 shrink-0" />
+            {availableTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(selectedTag === tag ? "" : tag)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                  selectedTag === tag
+                    ? "bg-purple-600 text-white"
+                    : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {selectedTag && (
+              <button
+                onClick={() => setSelectedTag("")}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 ml-1"
+              >
+                <X size={11} />
+                解除
+              </button>
+            )}
+          </div>
+        )}
+
         {/* ゲーム一覧 */}
         {loading ? (
           <div className="space-y-3">
@@ -103,8 +143,8 @@ export default function Dashboard() {
           </div>
         ) : games.length === 0 ? (
           <div className="text-center py-20 text-slate-500">
-            {debouncedQuery
-              ? `「${debouncedQuery}」に一致するゲームはありません`
+            {debouncedQuery || selectedTag
+              ? "条件に一致するゲームはありません"
               : "データがありません。Cron を実行してください。"}
           </div>
         ) : (
