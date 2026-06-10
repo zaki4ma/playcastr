@@ -1,0 +1,16 @@
+name: Sync Twitch Data
+
+on:
+  schedule:
+    # 30分ごとに実行
+    - cron: "*/30 * * * *"
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call sync endpoint
+        run: |
+          curl -f -X GET "${{ secrets.APP_URL }}/api/cron/sync" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}"

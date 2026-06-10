@@ -1,0 +1,129 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Search, ArrowUpDown } from "lucide-react";
+import type { Game } from "@/db/schema";
+import GameCard from "./GameCard";
+import GameModal from "./GameModal";
+
+type SortKey = "score" | "viewers" | "channels";
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: "score", label: "穴場スコア順" },
+  { value: "viewers", label: "視聴者数順" },
+  { value: "channels", label: "チャンネル数順" },
+];
+
+export default function Dashboard() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [sort, setSort] = useState<SortKey>("score");
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [selected, setSelected] = useState<Game | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // 検索クエリのデバウンス
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const fetchGames = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ sort });
+      if (debouncedQuery) params.set("q", debouncedQuery);
+      const res = await fetch(`/api/games?${params}`);
+      const data = await res.json();
+      setGames(data);
+    } finally {
+      setLoading(false);
+    }
+  }, [sort, debouncedQuery]);
+
+  useEffect(() => {
+    fetchGames();
+  }, [fetchGames]);
+
+  return (
+    <div className="min-h-screen bg-[#0f0f1a] text-slate-100">
+      {/* ヘッダー */}
+      <header className="border-b border-slate-800 px-6 py-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">
+              <span className="text-purple-400">Play</span>
+              <span className="text-cyan-400">Castr</span>
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              穴場ゲームダッシュボード for Streamers
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+        {/* 検索 + ソート */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              placeholder="ゲームを検索..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-lg text-sm placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+            />
+          </div>
+          <div className="relative">
+            <ArrowUpDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="pl-8 pr-4 py-2.5 bg-slate-800/60 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-purple-500 transition-colors appearance-none cursor-pointer"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* ゲーム一覧 */}
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-20 bg-slate-800/40 rounded-xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : games.length === 0 ? (
+          <div className="text-center py-20 text-slate-500">
+            {debouncedQuery
+              ? `「${debouncedQuery}」に一致するゲームはありません`
+              : "データがありません。Cron を実行してください。"}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {games.map((game, i) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                rank={i + 1}
+                onClick={setSelected}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {selected && (
+        <GameModal game={selected} onClose={() => setSelected(null)} />
+      )}
+    </div>
+  );
+}
