@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
 export async function GET() {
-  // 直近2スナップショット間でスコアが15%以上上昇したゲームを取得
   const result = await db.execute(sql`
     WITH latest AS (
       SELECT DISTINCT ON (game_id) game_id, score, recorded_at
@@ -31,5 +30,19 @@ export async function GET() {
     LIMIT 5
   `);
 
-  return NextResponse.json(result.rows);
+  // 生 SQL は snake_case で返るため camelCase にマッピング
+  const rows = (result.rows as Record<string, unknown>[]).map((r) => ({
+    id: r.id,
+    title: r.title,
+    boxArtUrl: r.box_art_url,
+    viewerCount: r.viewer_count,
+    channelCount: r.channel_count,
+    score: r.score,
+    tags: r.tags ?? [],
+    updatedAt: r.updated_at,
+    scoreDelta: Number(r.curr_score) - Number(r.prev_score),
+    pctChange: parseFloat(String(r.pct_change)),
+  }));
+
+  return NextResponse.json(rows);
 }
