@@ -60,7 +60,7 @@ export async function fetchTopGames(): Promise<TwitchGame[]> {
     const chunk = gameIds.slice(i, i + 25);
     const params = chunk.map((id) => `game_id=${id}`).join("&");
     const streamsRes = await fetch(
-      `${TWITCH_API_BASE}/streams?first=100&${params}`,
+      `${TWITCH_API_BASE}/streams?first=100&language=ja&${params}`,
       {
         headers: {
           "Client-ID": clientId,
