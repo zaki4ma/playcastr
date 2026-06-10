@@ -1,17 +1,32 @@
 "use client";
 
 import { Eye, Radio, TrendingUp } from "lucide-react";
-import type { Game } from "@/db/schema";
+import type { GameWithMeta } from "@/lib/types";
 
 interface Props {
-  game: Game;
+  game: GameWithMeta;
   rank: number;
-  onClick: (game: Game) => void;
+  onClick: (game: GameWithMeta) => void;
 }
 
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(n);
+}
+
+function HotBadge({ delta }: { delta: number | null }) {
+  if (delta === null || delta <= 0) return null;
+  const pct = delta / (delta > 0 ? 1 : 1); // delta is absolute
+  const isVeryHot = delta > 10;
+  return (
+    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+      isVeryHot
+        ? "bg-orange-500/20 text-orange-400"
+        : "bg-yellow-500/20 text-yellow-400"
+    }`}>
+      {isVeryHot ? "🔥 今が熱い" : "↑ 上昇中"}
+    </span>
+  );
 }
 
 export default function GameCard({ game, rank, onClick }: Props) {
@@ -36,9 +51,12 @@ export default function GameCard({ game, rank, onClick }: Props) {
 
       {/* ゲーム情報 */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-slate-100 truncate group-hover:text-purple-300 transition-colors">
-          {game.title}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-slate-100 truncate group-hover:text-purple-300 transition-colors">
+            {game.title}
+          </p>
+          <HotBadge delta={game.scoreDelta} />
+        </div>
         <div className="flex items-center gap-4 mt-1 text-xs text-slate-400">
           <span className="flex items-center gap-1">
             <Eye size={12} />
@@ -69,7 +87,14 @@ export default function GameCard({ game, rank, onClick }: Props) {
           <TrendingUp size={14} />
           {game.score.toFixed(1)}
         </div>
-        <p className="text-xs text-slate-500 mt-0.5">穴場スコア</p>
+        {game.scoreDelta !== null && game.scoreDelta !== 0 && (
+          <p className={`text-[10px] mt-0.5 ${game.scoreDelta > 0 ? "text-green-400" : "text-red-400"}`}>
+            {game.scoreDelta > 0 ? "+" : ""}{game.scoreDelta.toFixed(1)}
+          </p>
+        )}
+        {(game.scoreDelta === null || game.scoreDelta === 0) && (
+          <p className="text-xs text-slate-500 mt-0.5">穴場スコア</p>
+        )}
       </div>
     </button>
   );

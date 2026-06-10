@@ -1,11 +1,11 @@
 "use client";
 
 import { Eye, Radio, TrendingUp, Trophy } from "lucide-react";
-import type { Game } from "@/db/schema";
+import type { GameWithMeta } from "@/lib/types";
 
 interface Props {
-  games: Game[];
-  onSelect: (game: Game) => void;
+  games: GameWithMeta[];
+  onSelect: (game: GameWithMeta) => void;
 }
 
 function formatNumber(n: number): string {
@@ -59,6 +59,11 @@ export default function TopTen({ games, onSelect }: Props) {
                 <TrendingUp size={16} />
                 {game.score.toFixed(1)}
               </div>
+              {game.scoreDelta !== null && game.scoreDelta > 0 && (
+                <p className="text-[10px] text-orange-400 font-bold mt-0.5">
+                  🔥 今が熱い
+                </p>
+              )}
               <div className="flex justify-center gap-3 mt-1 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
                   <Eye size={10} />

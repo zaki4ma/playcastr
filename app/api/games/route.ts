@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { games } from "@/db/schema";
-import { desc, ilike, sql, and } from "drizzle-orm";
+import { games, gameHistory } from "@/db/schema";
+import { desc, ilike, and, sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -26,5 +26,28 @@ export async function GET(req: NextRequest) {
       : desc(games.score);
 
   const rows = await query.orderBy(orderCol).limit(200);
-  return NextResponse.json(rows);
+
+  // 前回スコアをサブクエリで取得（2番目に新しいレコード）
+  const prevResult = await db.execute(sql`
+    WITH ranked AS (
+      SELECT game_id, score,
+             ROW_NUMBER() OVER (PARTITION BY game_id ORDER BY recorded_at DESC) AS rn
+      FROM game_history
+    )
+    SELECT game_id, score FROM ranked WHERE rn = 2
+  `);
+
+  const prevMap = new Map(
+    (prevResult.rows as { game_id: string; score: number }[]).map((r) => [
+      r.game_id,
+      r.score,
+    ])
+  );
+
+  const result = rows.map((g) => ({
+    ...g,
+    scoreDelta: prevMap.has(g.id) ? g.score - (prevMap.get(g.id) ?? g.score) : null,
+  }));
+
+  return NextResponse.json(result);
 }

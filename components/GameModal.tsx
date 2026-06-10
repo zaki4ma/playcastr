@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Eye, Radio, TrendingUp, Clock } from "lucide-react";
+import { X, Eye, Radio, TrendingUp, Clock, Tv } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -29,6 +29,34 @@ function formatTime(iso: string): string {
   });
 }
 
+function getPeakHint(history: GameHistory[]): string | null {
+  if (history.length < 4) return null;
+
+  // JST (UTC+9) で時間帯ごとの平均視聴者数を集計
+  const hourMap: Record<number, { total: number; count: number }> = {};
+  for (const h of history) {
+    const jstHour = (new Date(h.recordedAt as unknown as string).getUTCHours() + 9) % 24;
+    if (!hourMap[jstHour]) hourMap[jstHour] = { total: 0, count: 0 };
+    hourMap[jstHour].total += h.viewerCount;
+    hourMap[jstHour].count += 1;
+  }
+
+  const entries = Object.entries(hourMap)
+    .map(([h, v]) => ({ hour: Number(h), avg: v.total / v.count }))
+    .sort((a, b) => b.avg - a.avg);
+
+  if (entries.length === 0) return null;
+
+  const peak = entries[0].hour;
+  const endHour = (peak + 2) % 24;
+  const timeLabel = `${String(peak).padStart(2, "0")}〜${String(endHour).padStart(2, "0")}時`;
+
+  if (peak >= 18 && peak < 24) return `夜帯（${timeLabel}）に視聴者が集まりやすい`;
+  if (peak >= 12 && peak < 18) return `夕方帯（${timeLabel}）に視聴者が集まりやすい`;
+  if (peak >= 6 && peak < 12) return `朝〜昼帯（${timeLabel}）に視聴者が集まりやすい`;
+  return `深夜帯（${timeLabel}）に視聴者が集まりやすい`;
+}
+
 export default function GameModal({ game, onClose }: Props) {
   const [history, setHistory] = useState<GameHistory[]>([]);
 
@@ -43,6 +71,8 @@ export default function GameModal({ game, onClose }: Props) {
     time: formatTime(h.recordedAt as unknown as string),
     score: parseFloat(h.score.toFixed(2)),
   }));
+
+  const peakHint = getPeakHint(history);
 
   return (
     <div
@@ -80,9 +110,17 @@ export default function GameModal({ game, onClose }: Props) {
           </div>
         </div>
 
+        {/* 配信時間帯ヒント */}
+        {peakHint && (
+          <div className="mt-4 flex items-start gap-2 bg-indigo-950/50 border border-indigo-500/30 rounded-lg px-3 py-2.5">
+            <Tv size={13} className="text-indigo-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-indigo-300">{peakHint} <span className="text-indigo-500">(JST)</span></p>
+          </div>
+        )}
+
         {/* トレンドグラフ */}
         {chartData.length >= 2 ? (
-          <div className="mt-5 pt-5 border-t border-slate-700/50">
+          <div className="mt-4 pt-4 border-t border-slate-700/50">
             <p className="text-xs text-slate-400 mb-3">穴場スコア推移（直近24h）</p>
             <ResponsiveContainer width="100%" height={100}>
               <LineChart data={chartData}>
@@ -116,7 +154,7 @@ export default function GameModal({ game, onClose }: Props) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="mt-5 pt-5 border-t border-slate-700/50">
+          <div className="mt-4 pt-4 border-t border-slate-700/50">
             <p className="text-xs text-slate-500 text-center py-2">
               グラフはデータ蓄積後に表示されます（次回 Cron 実行以降）
             </p>
