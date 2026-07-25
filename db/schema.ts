@@ -7,7 +7,10 @@ export const games = pgTable("games", {
   viewerCount: integer("viewer_count").notNull().default(0),
   channelCount: integer("channel_count").notNull().default(0),
   score: real("score").notNull().default(0),
+  momentumScore: real("momentum_score").notNull().default(0),
   tags: text("tags").array().notNull().default([]),
+  nameJa: text("name_ja"),
+  createdAt: timestamp("created_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

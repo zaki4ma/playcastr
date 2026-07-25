@@ -26,6 +26,8 @@ export async function GET() {
     JOIN latest l ON l.game_id = g.id
     JOIN prev p ON p.game_id = g.id
     WHERE l.score > p.score * 1.15
+    AND p.score > 0
+    AND g.score > 0
     ORDER BY pct_change DESC
     LIMIT 5
   `);
@@ -35,9 +37,9 @@ export async function GET() {
     id: r.id,
     title: r.title,
     boxArtUrl: r.box_art_url,
-    viewerCount: r.viewer_count,
-    channelCount: r.channel_count,
-    score: r.score,
+    viewerCount: Number(r.viewer_count),
+    channelCount: Number(r.channel_count),
+    score: Number(r.curr_score),
     tags: r.tags ?? [],
     updatedAt: r.updated_at,
     scoreDelta: Number(r.curr_score) - Number(r.prev_score),

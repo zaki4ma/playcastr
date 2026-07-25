@@ -1,0 +1,1 @@
+ALTER TABLE "games" ADD COLUMN "momentum_score" real DEFAULT 0 NOT NULL;

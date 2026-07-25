@@ -15,6 +15,27 @@
       "when": 1781076926264,
       "tag": "0001_fast_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781084612765,
+      "tag": "0002_fresh_silverclaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781088868433,
+      "tag": "0003_striped_bulldozer",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785017361799,
+      "tag": "0004_broken_bloodstorm",
+      "breakpoints": true
     }
   ]
 }

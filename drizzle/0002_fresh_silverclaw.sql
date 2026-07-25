@@ -1,0 +1,1 @@
+ALTER TABLE "games" ADD COLUMN "name_ja" text;

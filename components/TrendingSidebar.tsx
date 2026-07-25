@@ -2,6 +2,7 @@
 
 import { Flame, TrendingUp } from "lucide-react";
 import type { GameWithMeta } from "@/lib/types";
+import { trackGameCardClick } from "@/lib/analytics";
 
 type TrendingGame = GameWithMeta & { pctChange: number };
 
@@ -31,7 +32,7 @@ export default function TrendingSidebar({ trending, onSelect, lastUpdated }: Pro
             {trending.map((game) => (
               <button
                 key={game.id}
-                onClick={() => onSelect(game)}
+                onClick={() => { trackGameCardClick(game.id, game.title, game.score, "trending"); onSelect(game); }}
                 className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-800/60 transition-colors border-b border-slate-800/40 last:border-0 text-left"
               >
                 <img
@@ -51,12 +52,43 @@ export default function TrendingSidebar({ trending, onSelect, lastUpdated }: Pro
                   </div>
                 </div>
                 <span className="text-xs font-bold text-orange-400 shrink-0">
-                  +{game.pctChange}%
+                  {Number.isFinite(game.pctChange) ? `+${game.pctChange}%` : "NEW"}
                 </span>
               </button>
             ))}
           </div>
         )}
+      </div>
+
+      {/* バッジ説明 */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 space-y-3">
+        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">バッジの見方</h2>
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-2.5">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0 mt-0.5">
+              ⚡ チャンス
+            </span>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              スコアが上昇中かつ配信チャンネル数が50未満。今すぐ参入すれば発見されやすい。
+            </p>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 shrink-0 mt-0.5">
+              🔥 今が熱い
+            </span>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              穴場スコアが前回より大幅に上昇中。視聴者の注目が急増しているタイミング。
+            </p>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 shrink-0 mt-0.5">
+              ↑ 上昇中
+            </span>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              穴場スコアが前回より上昇。緩やかにチャンスが広がっている状態。
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* 最終更新 */}
