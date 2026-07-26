@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
   if (ids.length > 0) {
     await db
       .update(games)
-      .set({ viewerCount: 0, channelCount: 0, score: 0, updatedAt: now })
+      .set({ viewerCount: 0, channelCount: 0, score: 0, momentumScore: 0, updatedAt: now })
       .where(notInArray(games.id, ids));
   }
 
