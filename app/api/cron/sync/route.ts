@@ -28,11 +28,11 @@ export async function GET(req: NextRequest) {
       .from(games)
       .where(inArray(games.id, ids)),
     // 6h前のchannel_countを取得（±2h窓で最も近いレコード）
+    // game_id フィルタは配列パラメータの互換性問題を避けるため省略し、時間帯で絞る
     db.execute(sql`
       SELECT DISTINCT ON (game_id) game_id, channel_count
       FROM game_history
       WHERE recorded_at BETWEEN NOW() - INTERVAL '8 hours' AND NOW() - INTERVAL '4 hours'
-        AND game_id = ANY(${ids})
       ORDER BY game_id, ABS(EXTRACT(EPOCH FROM (recorded_at - (NOW() - INTERVAL '6 hours'))))
     `),
   ]);
